@@ -42,76 +42,26 @@ class Presenter:
             h1 {
                 margin-bottom: 1rem !important;
             }
-            .month-nav-container {
-                display: flex !important;
+            /* Ensure horizontal layout for month navigation */
+            div[data-testid="stHorizontalBlock"] {
                 flex-direction: row !important;
+                display: flex !important;
                 align-items: center !important;
-                justify-content: space-between !important;
-                width: 100% !important;
-                margin-bottom: 20px !important;
-            }
-            .month-nav-button {
-                width: 120px !important;
-                min-width: 120px !important;
-            }
-            .month-display {
-                text-align: center !important;
-                flex-grow: 1 !important;
-            }
-            /* Mobile specific styles */
-            @media (max-width: 768px) {
-                .month-nav-container {
-                    display: flex !important;
-                    flex-direction: row !important;
-                    margin-bottom: 10px !important;
-                }
-                .month-nav-button {
-                    width: 100px !important;
-                    min-width: 100px !important;
-                }
-                .month-display {
-                    padding: 0 5px !important;
-                }
             }
         </style>
         """, unsafe_allow_html=True)
         
         st.title("デカチホ")
         
-        st.markdown("""
-        <div class="month-nav-container">
-            <button id="prev-month" class="month-nav-button stButton">LAST MONTH</button>
-            <div class="month-display">
-                <h3>{}</h3>
-            </div>
-            <button id="next-month" class="month-nav-button stButton">NEXT MONTH</button>
-        </div>
-        """.format(self._get_displayed_month()), unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns([1, 1, 1])
+        # Create a simple horizontal layout using columns
+        col1, col2, col3 = st.columns([1, 2, 1])
         with col1:
-            prev_btn = st.button("←", key="prev_month_btn", on_click=self._prev_month)
+            st.button("LAST MONTH", on_click=self._prev_month, use_container_width=True)
+        with col2:
+            current_month = self._get_displayed_month()
+            st.markdown(f"<h3 style='text-align: center;'>{current_month}</h3>", unsafe_allow_html=True)
         with col3:
-            next_btn = st.button("→", key="next_month_btn", on_click=self._next_month)
-            
-        st.markdown("""
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const prevBtn = document.getElementById('prev-month');
-                const nextBtn = document.getElementById('next-month');
-                const hiddenPrevBtn = document.querySelector('button[data-testid="stButton"]:has(div:contains("←"))');
-                const hiddenNextBtn = document.querySelector('button[data-testid="stButton"]:has(div:contains("→"))');
-                
-                prevBtn.addEventListener('click', function() {
-                    hiddenPrevBtn.click();
-                });
-                
-                nextBtn.addEventListener('click', function() {
-                    hiddenNextBtn.click();
-                });
-            });
-        </script>
-        """, unsafe_allow_html=True)
+            st.button("NEXT MONTH", on_click=self._next_month, use_container_width=True)
     
     def _prev_month(self):
         st.session_state['month_offset'] -= 1
