@@ -95,8 +95,19 @@ class Repository:
             
             time.sleep(random.uniform(0.5, 1.0))
         
+        performances.sort(key=lambda x: self._parse_date_for_sorting(x.date))
+        
         return performances
-    
+
+    def _parse_date_for_sorting(self, date_str):
+        """日付文字列をソート可能な形式に変換"""
+        # 例: "2023年4月15日(水)" -> "20230415"
+        match = re.match(r'(\d+)年(\d+)月(\d+)日', date_str)
+        if match:
+            year, month, day = match.groups()
+            return f"{year}{month:>02}{day:>02}"
+        return date_str
+
     def _process_batch(self, batch):
         results = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.config.max_workers) as executor:
