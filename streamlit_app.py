@@ -11,8 +11,7 @@ def main():
     repository = Repository(config)
     use_cases = UseCases(repository, presenter)
     
-    with st.spinner("読み込み中..."):
-        use_cases.get_member_performances()
+    use_cases.get_member_performances()
 
 if __name__ == "__main__":
     main()

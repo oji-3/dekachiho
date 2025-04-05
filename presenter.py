@@ -1,7 +1,12 @@
 import streamlit as st
+from datetime import datetime
 
 class Presenter:
     def __init__(self):
+        # Initialize month offset state if not exists
+        if 'month_offset' not in st.session_state:
+            st.session_state['month_offset'] = 0
+            
         self._setup_ui()
     
     def _setup_ui(self):
@@ -36,12 +41,48 @@ class Presenter:
                 padding-bottom: 2rem;
             }
             h1 {
-                margin-bottom: 2rem !important;
+                margin-bottom: 1rem !important;
+            }
+            .month-nav {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin-bottom: 2rem;
             }
         </style>
         """, unsafe_allow_html=True)
         
         st.title("デカチホ")
+        
+        # Add month navigation buttons
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            st.button("LAST MONTH", on_click=self._prev_month, use_container_width=True)
+        with col2:
+            current_month = self._get_displayed_month()
+            st.markdown(f"<h3 style='text-align: center;'>{current_month}</h3>", unsafe_allow_html=True)
+        with col3:
+            st.button("NEXT MONTH", on_click=self._next_month, use_container_width=True)
+    
+    def _prev_month(self):
+        st.session_state['month_offset'] -= 1
+    
+    def _next_month(self):
+        st.session_state['month_offset'] += 1
+    
+    def _get_displayed_month(self):
+        current_date = datetime.now()
+        target_month = current_date.month + st.session_state['month_offset']
+        target_year = current_date.year
+        
+        while target_month > 12:
+            target_month -= 12
+            target_year += 1
+        while target_month < 1:
+            target_month += 12
+            target_year -= 1
+            
+        return f"{target_year}年{target_month}月"
     
     def _generate_members_html(self, members, target_member):
         html_output = '<div style="margin-top: 10px; margin-bottom: 15px;">'
@@ -66,6 +107,9 @@ class Presenter:
                         else:
                             st.markdown("**出演メンバー情報を取得できませんでした**")
                         
-                        st.markdown(f"**公演詳細URL**: [{perf.url}]({perf.url})")
+                        st.markdown(f"**公演URL**: [{perf.url}]({perf.url})")
         else:
             st.markdown("出演公演情報がありません")
+    
+    def get_month_offset(self):
+        return st.session_state['month_offset']

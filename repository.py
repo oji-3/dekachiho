@@ -20,30 +20,27 @@ class Repository:
         })
         self.cache = {}
     
-    def get_performances(self):
-        # Get current month performances
-        current_performances = self._fetch_performances(self.config.schedule_url)
-        
-        # Get next month URL and performances
-        next_month_url = self._get_next_month_url()
-        next_performances = self._fetch_performances(next_month_url)
-        
-        # Combine both months' data (current month followed by next month)
-        all_performance_data = current_performances + next_performances
-        
-        return self._process_performances_in_batches(all_performance_data)
+    def get_performances(self, month_offset=0):
+        # Only fetch for the specified month
+        url = self.config.schedule_url if month_offset == 0 else self._get_url_for_month_offset(month_offset)
+        performances = self._fetch_performances(url)
+        return self._process_performances_in_batches(performances)
     
-    def _get_next_month_url(self):
+    def _get_url_for_month_offset(self, month_offset):
         # Get current date
         current_date = datetime.now()
         
-        # Calculate next month and year
-        next_month = current_date.month + 1
-        next_year = current_date.year
+        # Calculate target month and year based on offset
+        target_month = current_date.month + month_offset
+        target_year = current_date.year
         
-        if next_month > 12:
-            next_month = 1
-            next_year += 1
+        # Adjust for year boundaries
+        while target_month > 12:
+            target_month -= 12
+            target_year += 1
+        while target_month < 1:
+            target_month += 12
+            target_year -= 1
         
         # Try to detect and replace any existing year/month pattern
         pattern = re.compile(r'(/\d{4}/\d{1,2}/)')
@@ -51,11 +48,11 @@ class Repository:
         
         if match:
             # Replace existing pattern
-            return self.config.schedule_url.replace(match.group(1), f"/{next_year}/{next_month}/")
+            return self.config.schedule_url.replace(match.group(1), f"/{target_year}/{target_month}/")
         else:
             # Append new pattern
             base_url = self.config.schedule_url.rstrip('/')
-            return f"{base_url}/{next_year}/{next_month}/"
+            return f"{base_url}/{target_year}/{target_month}/"
     
     def _fetch_performances(self, url):
         try:
