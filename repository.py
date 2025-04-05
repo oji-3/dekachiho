@@ -5,6 +5,7 @@ import time
 import random
 import concurrent.futures
 from functools import partial
+from datetime import datetime
 
 from entities import Performance
 
@@ -20,8 +21,45 @@ class Repository:
         self.cache = {}
     
     def get_performances(self):
+        # Get current month performances
+        current_performances = self._fetch_performances(self.config.schedule_url)
+        
+        # Get next month URL and performances
+        next_month_url = self._get_next_month_url()
+        next_performances = self._fetch_performances(next_month_url)
+        
+        # Combine both months' data (current month followed by next month)
+        all_performance_data = current_performances + next_performances
+        
+        return self._process_performances_in_batches(all_performance_data)
+    
+    def _get_next_month_url(self):
+        # Get current date
+        current_date = datetime.now()
+        
+        # Calculate next month and year
+        next_month = current_date.month + 1
+        next_year = current_date.year
+        
+        if next_month > 12:
+            next_month = 1
+            next_year += 1
+        
+        # Try to detect and replace any existing year/month pattern
+        pattern = re.compile(r'(/\d{4}/\d{1,2}/)')
+        match = pattern.search(self.config.schedule_url)
+        
+        if match:
+            # Replace existing pattern
+            return self.config.schedule_url.replace(match.group(1), f"/{next_year}/{next_month}/")
+        else:
+            # Append new pattern
+            base_url = self.config.schedule_url.rstrip('/')
+            return f"{base_url}/{next_year}/{next_month}/"
+    
+    def _fetch_performances(self, url):
         try:
-            res = self.session.get(self.config.schedule_url, timeout=self.config.request_timeout)
+            res = self.session.get(url, timeout=self.config.request_timeout)
             res.raise_for_status()
         except Exception:
             return []
@@ -47,7 +85,7 @@ class Repository:
                         "url": url
                     })
         
-        return self._process_performances_in_batches(performance_data)
+        return performance_data
     
     def _process_performances_in_batches(self, performance_data):
         performances = []
