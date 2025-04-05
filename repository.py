@@ -21,20 +21,16 @@ class Repository:
         self.cache = {}
     
     def get_performances(self, month_offset=0):
-        # Only fetch for the specified month
         url = self.config.schedule_url if month_offset == 0 else self._get_url_for_month_offset(month_offset)
         performances = self._fetch_performances(url)
         return self._process_performances_in_batches(performances)
     
     def _get_url_for_month_offset(self, month_offset):
-        # Get current date
         current_date = datetime.now()
         
-        # Calculate target month and year based on offset
         target_month = current_date.month + month_offset
         target_year = current_date.year
         
-        # Adjust for year boundaries
         while target_month > 12:
             target_month -= 12
             target_year += 1
@@ -42,15 +38,12 @@ class Repository:
             target_month += 12
             target_year -= 1
         
-        # Try to detect and replace any existing year/month pattern
         pattern = re.compile(r'(/\d{4}/\d{1,2}/)')
         match = pattern.search(self.config.schedule_url)
         
         if match:
-            # Replace existing pattern
             return self.config.schedule_url.replace(match.group(1), f"/{target_year}/{target_month}/")
         else:
-            # Append new pattern
             base_url = self.config.schedule_url.rstrip('/')
             return f"{base_url}/{target_year}/{target_month}/"
     
@@ -100,7 +93,6 @@ class Repository:
         return performances
 
     def _parse_date_for_sorting(self, date_str):
-        """日付文字列をソート可能な形式に変換"""
         # 例: "2023年4月15日(水)" -> "20230415"
         match = re.match(r'(\d+)年(\d+)月(\d+)日', date_str)
         if match:

@@ -3,7 +3,6 @@ from datetime import datetime
 
 class Presenter:
     def __init__(self):
-        # Initialize month offset state if not exists
         if 'month_offset' not in st.session_state:
             st.session_state['month_offset'] = 0
             
@@ -54,7 +53,6 @@ class Presenter:
         
         st.title("デカチホ")
         
-        # Add month navigation buttons
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             st.button("LAST MONTH", on_click=self._prev_month, use_container_width=True)
