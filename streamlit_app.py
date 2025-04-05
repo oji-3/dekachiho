@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 import re
 import os
 from dotenv import load_dotenv
+import concurrent.futures
+from functools import partial
 
 class Config:
     def __init__(self):
@@ -21,6 +23,7 @@ class Config:
             "SAT": "土",
             "SUN": "日"
         }
+        self.max_workers = 10
 
 class Entities:
     class Performance:
@@ -53,8 +56,8 @@ class Repository:
 
         soup = BeautifulSoup(res.text, "html.parser")
         year_month = self._get_year_month(soup)
-        performances = []
-        
+
+        performance_data = []
         entries = soup.select("li.schedule_entry_box.clearfix")
         
         for idx, entry in enumerate(entries):
@@ -66,18 +69,51 @@ class Repository:
                 url = performance["url"]
                 
                 if url:
-                    is_appearing, members = self._check_member_in_performance(url, self.config.target_member)
+                    performance_data.append({
+                        "date": f"{year_month}{date_and_week}",
+                        "title": title,
+                        "url": url
+                    })
+
+        return self._process_performances_parallel(performance_data)
+    
+    def _process_performances_parallel(self, performance_data):
+        performances = []
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.config.max_workers) as executor:
+            check_func = partial(self._check_performance_worker, 
+                                target_member=self.config.target_member,
+                                keyword=self.config.keyword)
+            
+            future_to_perf = {
+                executor.submit(check_func, perf): perf 
+                for perf in performance_data
+            }
+            
+            for future in concurrent.futures.as_completed(future_to_perf):
+                perf = future_to_perf[future]
+                try:
+                    is_appearing, members = future.result()
                     if is_appearing:
                         performance_info = Entities.Performance(
-                            date=f"{year_month}{date_and_week}",
-                            title=title,
-                            url=url,
+                            date=perf["date"],
+                            title=perf["title"],
+                            url=perf["url"],
                             member=self.config.target_member,
                             members=members
                         )
                         performances.append(performance_info)
-        
+                except Exception as e:
+                    st.error(f"Error processing {perf['url']}: {str(e)}")
+                    
         return performances
+
+    def _check_performance_worker(self, performance, target_member, keyword):
+        """Worker function for checking a performance in parallel"""
+        try:
+            return self._check_member_in_performance(performance["url"], target_member)
+        except Exception as e:
+            return False, []
     
     def _get_year_month(self, soup):
         month = soup.select_one("p.month").contents[0].strip() if soup.select_one("p.month") else ""
@@ -184,12 +220,10 @@ class Presenter:
                 font-weight: bold;
                 border: 1px solid #ffc107;
             }
-            /* モダンなローディングスタイル */
             .stSpinner > div {
                 border-color: #1976D2 !important;
                 border-bottom-color: transparent !important;
             }
-            /* モダンなアプリスタイル */
             .main .block-container {
                 padding-top: 2rem;
                 padding-bottom: 2rem;
@@ -201,6 +235,10 @@ class Presenter:
         """, unsafe_allow_html=True)
         
         st.title("デカチホ")
+        
+        # Add progress indicator for parallel processing
+        if "processing_state" not in st.session_state:
+            st.session_state.processing_state = {"progress": 0, "total": 0}
     
     def _generate_members_html(self, members, target_member):
         html_output = '<div style="margin-top: 10px; margin-bottom: 15px;">'
@@ -238,7 +276,7 @@ def main():
     loading_placeholder = st.empty()
     
     with loading_placeholder.container():
-        with st.spinner("データを読み込み中..."):
+        with st.spinner("読み込み中..."):
             if 'performances' not in st.session_state:
                 st.session_state.performances = repository.get_performances()
             
