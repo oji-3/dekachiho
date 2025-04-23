@@ -27,7 +27,7 @@ jobs:
       - name: Install Playwright
         run: |
           npm install -D playwright
-          npx playwright install --with-deps
+          npx playwright install
 
       - name: Run Playwright in headless mode
         run: |
