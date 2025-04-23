@@ -18,6 +18,12 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Cache Playwright binaries
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-v1
+
       - name: Install Playwright
         run: |
           npm install -D playwright
@@ -25,8 +31,7 @@ jobs:
 
       - name: Run Playwright in headless mode
         run: |
-          echo "Launching headless browser..."
-          echo "const { chromium } = require('playwright');" >> ping.js
+          echo "const { chromium } = require('playwright');" > ping.js
           echo "(async () => {" >> ping.js
           echo "  const browser = await chromium.launch({ headless: true });" >> ping.js
           echo "  const page = await browser.newPage();" >> ping.js
