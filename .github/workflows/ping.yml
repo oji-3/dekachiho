@@ -1,16 +1,29 @@
-name: Keep Streamlit Awake
+name: Ping Streamlit with Playwright
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # 毎時15分間隔で実行
-  workflow_dispatch:        # 手動実行も可能にする
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Ping Streamlit app
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
         run: |
-          echo "Pinging https://dekachiho.streamlit.app/ ..."
-          curl -s https://dekachiho.streamlit.app/ > /dev/null
+          npm install -D playwright
+          npx playwright install --with-deps
+
+      - name: Open Streamlit App
+        run: |
+          npx playwright codegen https://dekachiho.streamlit.app/ --target=chromium --timeout=15000
+
