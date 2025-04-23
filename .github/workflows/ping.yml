@@ -2,7 +2,7 @@ name: Ping Streamlit with Playwright (Headless)
 
 on:
   schedule:
-    - cron: '*/480 * * * *'
+    - cron: '0 */8 * * *'
   workflow_dispatch:
 
 jobs:
