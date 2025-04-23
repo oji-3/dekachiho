@@ -1,8 +1,8 @@
-name: Ping Streamlit with Playwright
+name: Ping Streamlit with Playwright (Headless)
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/60 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -23,7 +23,15 @@ jobs:
           npm install -D playwright
           npx playwright install --with-deps
 
-      - name: Open Streamlit App
+      - name: Run Playwright in headless mode
         run: |
-          npx playwright codegen https://dekachiho.streamlit.app/ --target=chromium --timeout=15000
-
+          echo "Launching headless browser..."
+          echo "const { chromium } = require('playwright');" >> ping.js
+          echo "(async () => {" >> ping.js
+          echo "  const browser = await chromium.launch({ headless: true });" >> ping.js
+          echo "  const page = await browser.newPage();" >> ping.js
+          echo "  await page.goto('https://dekachiho.streamlit.app/', { waitUntil: 'networkidle' });" >> ping.js
+          echo "  await page.waitForTimeout(5000);" >> ping.js
+          echo "  await browser.close();" >> ping.js
+          echo "})();" >> ping.js
+          node ping.js
