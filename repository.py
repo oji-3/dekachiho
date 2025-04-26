@@ -215,13 +215,23 @@ class Repository:
             
             members = self._extract_members_from_html(res.text)
             
-            for member in members:
-                if member_name in member or self.config.keyword in member:
-                    return True, members
-                    
+            if members:
+                for member in members:
+                    if member_name in member or self.config.keyword in member:
+                        return True, members
+
+                return False, members
+
             if self.config.keyword in res.text:
-                return True, members
-            return False, members
+                soup = BeautifulSoup(res.text, 'html.parser')
+                text = soup.get_text()
+
+                performer_contexts = ["出演者", "メンバー", "キャスト", "cast", "member", "performer"]
+                for context in performer_contexts:
+                    if context in text and abs(text.find(context) - text.find(self.config.keyword)) < 200:
+                        return True, []
+            
+            return False, []
             
         except Exception as e:
             raise Exception(f"ページの取得エラー: {str(e)}")
