@@ -31,12 +31,30 @@ jobs:
 
       - name: Run Playwright in headless mode
         run: |
-          echo "const { chromium } = require('playwright');" > ping.js
-          echo "(async () => {" >> ping.js
-          echo "  const browser = await chromium.launch({ headless: true });" >> ping.js
-          echo "  const page = await browser.newPage();" >> ping.js
-          echo "  await page.goto('https://dekachiho.streamlit.app/', { waitUntil: 'networkidle' });" >> ping.js
-          echo "  await page.waitForTimeout(5000);" >> ping.js
-          echo "  await browser.close();" >> ping.js
-          echo "})();" >> ping.js
+          cat << 'EOF' > ping.js
+          const { chromium } = require('playwright');
+
+          (async () => {
+            const urls = [
+              "https://dekachiho.streamlit.app/",
+              "https://zerotalkevent.streamlit.app/"
+            ];
+
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage();
+
+            for (const url of urls) {
+              console.log(`Pinging: ${url}`);
+              try {
+                await page.goto(url, { waitUntil: 'networkidle' });
+                await page.waitForTimeout(5000);
+              } catch (err) {
+                console.error(`Failed to ping ${url}:`, err);
+              }
+            }
+
+            await browser.close();
+          })();
+          EOF
+
           node ping.js
